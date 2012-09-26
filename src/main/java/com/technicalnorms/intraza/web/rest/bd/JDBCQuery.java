@@ -332,7 +332,7 @@ public class JDBCQuery
 					}
 					else
 					{
-						logger.error("TARIFA CLIENTE 0 ("+idCliente+") ("+codigoArticulo+")");
+						logger.debug("TARIFA CLIENTE 0 ("+idCliente+") ("+codigoArticulo+")");
 						precioCliente = 0;
 					}					
 					
