@@ -7,7 +7,7 @@ import java.util.ArrayList;
  * @author JLZS
  *
  */
-public class JsonPrepedido
+public class JsonPedido
 {
 	private int idPedido = 0;
 	private int idCliente = 0;
@@ -20,7 +20,8 @@ public class JsonPrepedido
 	private int anioFechaEntrega = 0;
 	private String observaciones = null;
 	private boolean fijarObservaciones = false;
-	private ArrayList<JsonLineaPrepedido> lineasPedido = null;
+	private int descuentoEspecial = 0;
+	private ArrayList<JsonLineaPedido> lineasPedido = null;
 	
 	/**
 	 * Constructor.
@@ -36,8 +37,9 @@ public class JsonPrepedido
 	 * @param anioFechaEntrega
 	 * @param observaciones
 	 * @param fijarObservaciones
+	 * @param descuentoEspecial
 	 */
-	public JsonPrepedido(int idPedido, int idCliente, String cliente, int diaFechaPedido, int mesFechaPedido, int anioFechaPedido, int diaFechaEntrega, int mesFechaEntrega, int anioFechaEntrega, String observaciones, boolean fijarObservaciones)
+	public JsonPedido(int idPedido, int idCliente, String cliente, int diaFechaPedido, int mesFechaPedido, int anioFechaPedido, int diaFechaEntrega, int mesFechaEntrega, int anioFechaEntrega, String observaciones, boolean fijarObservaciones, int descuentoEspecial)
 	{
 		this.idPedido = idPedido;
 		this.idCliente = idCliente;
@@ -50,12 +52,13 @@ public class JsonPrepedido
 		this.anioFechaEntrega = anioFechaEntrega;
 		this.observaciones = observaciones;
 		this.fijarObservaciones = fijarObservaciones;
+		this.descuentoEspecial = descuentoEspecial;
 		
-		this.lineasPedido = new ArrayList<JsonLineaPrepedido>();
+		this.lineasPedido = new ArrayList<JsonLineaPedido>();
 	}
 	
-	public JsonPrepedido()
-	{
+	public JsonPedido()
+	{		
 	}
 	
 	// ***********************
@@ -106,7 +109,11 @@ public class JsonPrepedido
 		this.fijarObservaciones = fijar;
 	}
 	
-	public void setLineasPedido(ArrayList<JsonLineaPrepedido> lineasPedido) {
+	public void setDescuentoEspecial(int descuento) {
+		this.descuentoEspecial = descuento;
+	}
+	
+	public void setLineasPedido(ArrayList<JsonLineaPedido> lineasPedido) {
 		this.lineasPedido = lineasPedido;
 	}
 
@@ -162,10 +169,13 @@ public class JsonPrepedido
 		return this.fijarObservaciones;
 	}
 	
-	public ArrayList<JsonLineaPrepedido> getLineasPedido()
+	public int getDescuentoEspecial()
+	{
+		return this.descuentoEspecial;
+	}
+	
+	public ArrayList<JsonLineaPedido> getLineasPedido()
 	{
 		return this.lineasPedido;
 	}
-	
-	
 }

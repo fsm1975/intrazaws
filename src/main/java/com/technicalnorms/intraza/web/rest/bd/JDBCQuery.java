@@ -8,7 +8,9 @@ import org.apache.log4j.Logger;
 import com.technicalnorms.intraza.web.rest.PropiedadesConfiguracion;
 import com.technicalnorms.intraza.web.rest.bd.datos.Articulo;
 import com.technicalnorms.intraza.web.rest.bd.datos.Cliente;
-import com.technicalnorms.intraza.web.rest.bd.datos.JsonPrepedido;
+import com.technicalnorms.intraza.web.rest.bd.datos.JsonPedido;
+import com.technicalnorms.intraza.web.rest.bd.datos.ResultadoConsultaDato;
+import com.technicalnorms.intraza.web.rest.bd.datos.ResultadoDatosRutero;
 import com.technicalnorms.intraza.web.rest.bd.datos.ResultadoEnvioPedido;
 import com.technicalnorms.intraza.web.rest.bd.datos.Rutero;
 import com.technicalnorms.intraza.web.rest.bd.datos.Observacion;
@@ -152,10 +154,10 @@ public class JDBCQuery
 		finally 
 		{
 			try {
-				rs.close();
-				stmt.close();
-				conn.close();
-			} catch (SQLException e) {
+				if (rs!=null) rs.close();
+				if (stmt!=null) stmt.close();
+				if (conn!=null) conn.close();
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -202,10 +204,10 @@ public class JDBCQuery
 		finally 
 		{
 			try {
-				rs.close();
-				stmt.close();
-				conn.close();
-			} catch (SQLException e) {
+				if (rs!=null) rs.close();
+				if (stmt!=null) stmt.close();
+				if (conn!=null) conn.close();
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -253,11 +255,11 @@ public class JDBCQuery
 		{
 			try 
 			{
-				rs.close();
-				stmt.close();
-				conn.close();
+				if (rs!=null) rs.close();
+				if (stmt!=null) stmt.close();
+				if (conn!=null) conn.close();
 			} 
-			catch (SQLException e) 
+			catch (Exception e) 
 			{
 				e.printStackTrace();
 			}
@@ -265,6 +267,140 @@ public class JDBCQuery
 
 		return listaClientes;
 	}
+	
+    /**
+     * Obtiene los datos de los ruteros de la BD de intraza, para la tabla rutero de la BD de la tablet
+     *
+     * @return ArrayList donde cada elemento seran los datos de un rutero
+     */
+    public static ArrayList<Rutero> getRuterosTotal()
+    {
+            ArrayList<Rutero> listaRuteros = new ArrayList<Rutero>();
+            Statement stmt = null;
+            Statement stmtTarifaCliente = null;
+            Statement stmtTarifaDefecto = null;
+            Statement stmtPesoTotalAnio = null;
+            Connection conn = null;
+            ResultSet rs = null;
+            ResultSet rsTarifaCliente = null;
+            ResultSet rsTarifaDefecto = null;
+            ResultSet rsPesoTotalAnio = null;
+            String codigoArticulo = null;
+            int idCliente = 0;
+            String fechaPedido = null;
+            float peso = 0;
+            float pesoTotalAnio = 0;
+            float precio = 0;
+            float precioCliente = 0;
+            String observaciones = null;
+
+            try
+            {
+                    conn = getConnection();
+                    stmt = conn.createStatement();
+
+                    //Consultamos los ruteros
+                    logger.debug("Consultamos los ruteros con la select: "+SELECT_RUTEROS);
+                    rs = stmt.executeQuery(SELECT_RUTEROS);
+
+                    //Obtenemos los datos de cada registro
+                    while (rs.next())
+                    {
+                            codigoArticulo = rs.getString(1);
+                            idCliente = rs.getInt(2);
+                            fechaPedido = rs.getString(3);
+                            peso = rs.getFloat(4);
+                            precio = rs.getFloat(5);
+                            observaciones = rs.getString(6);
+                           
+                            //Para cada registro de rutero tenemos que obtener su tarifa cliente    
+                            stmtTarifaCliente = conn.createStatement();
+                            rsTarifaCliente = stmtTarifaCliente.executeQuery(dameSelectTarifaClienteArticuloParaRutero(idCliente, codigoArticulo));
+                           
+                            //Si no hemos obtenido registro, es porque no tiene tarifa cliente y hay que poner la tarifa por defecto
+                            if (rsTarifaCliente.next())
+                            {
+                                    precioCliente = rsTarifaCliente.getFloat(1);
+                            }
+                            else
+                            {
+                                    //Para cada registro de rutero tenemos que obtener su tarifa cliente    
+                                    stmtTarifaDefecto = conn.createStatement();
+                                    rsTarifaDefecto = stmtTarifaDefecto.executeQuery(dameSelectTarifaDefectoArticuloParaRutero(codigoArticulo));
+                                   
+                                    if (rsTarifaDefecto.next())
+                                    {
+                                            precioCliente = rsTarifaDefecto.getFloat(1);
+                                    }
+                                    else
+                                    {
+                                            logger.debug("TARIFA CLIENTE 0. idCliente ("+idCliente+") codigoArticulo ("+codigoArticulo+")");
+                                            precioCliente = 0;
+                                    }                                      
+                                   
+                                    rsTarifaDefecto.close();
+                                    stmtTarifaDefecto.close();
+                            }
+                           
+                            rsTarifaCliente.close();
+                            stmtTarifaCliente.close();
+                           
+                            //Tenemos que obtener el peso total al anio
+                            stmtPesoTotalAnio = conn.createStatement();
+                            rsPesoTotalAnio = stmtPesoTotalAnio.executeQuery(dameSelectPesoTotalAnioParaClienteArticulo(idCliente, codigoArticulo));
+                           
+                            if (rsPesoTotalAnio.next())
+                            {      
+                                    //Si es kilos tomamos el peso total, sino las unidades totales
+                                    if (rsPesoTotalAnio.getBoolean(1))
+                                    {
+                                            pesoTotalAnio = rsPesoTotalAnio.getFloat(2);
+                                    }
+                                    else
+                                    {
+                                            pesoTotalAnio = rsPesoTotalAnio.getFloat(3);                                    
+                                    }
+                            }
+                            else
+                            {
+                                    pesoTotalAnio = 0;
+                            }
+                           
+                            rsPesoTotalAnio.close();
+                            stmtPesoTotalAnio.close();
+                           
+                            listaRuteros.add(new Rutero(codigoArticulo, idCliente, fechaPedido, peso, pesoTotalAnio, precio, precioCliente, observaciones));
+                    }
+            }
+            catch (Exception e)
+            {
+                    logger.error("Excepcion: "+e.toString());
+                    e.printStackTrace();
+                   
+                    //Devolvemos una lista vacia
+                    listaRuteros = new ArrayList<Rutero>();
+            }
+            //Cerramos los objetos abiertos para la consulta en la BD
+            finally
+            {
+                    try {
+                            if (rs!=null) rs.close();
+                            if (rsTarifaCliente!=null) rsTarifaCliente.close();
+                            if (rsTarifaDefecto!=null) rsTarifaDefecto.close();
+                            if (rsPesoTotalAnio!=null) rsPesoTotalAnio.close();
+                            if (stmt!=null) stmt.close();
+                            if (stmtTarifaCliente!=null) stmtTarifaCliente.close();
+                            if (stmtTarifaDefecto!=null) stmtTarifaDefecto.close();
+                            if (stmtPesoTotalAnio!=null) stmtPesoTotalAnio.close();
+                            if (conn!=null) conn.close();
+                    }
+                    catch (Exception e) {
+                           e.printStackTrace();
+                    }
+            }
+
+            return listaRuteros;
+    }
 	
 	/**
 	 * Obtiene los datos de los ruteros de la BD de intraza, para la tabla rutero de la BD de la tablet
@@ -275,14 +411,8 @@ public class JDBCQuery
 	{
 		ArrayList<Rutero> listaRuteros = new ArrayList<Rutero>();
 		Statement stmt = null;
-		Statement stmtTarifaCliente = null;
-		Statement stmtTarifaDefecto = null;
-		Statement stmtPesoTotalAnio = null;
 		Connection conn = null;
 		ResultSet rs = null;
-		ResultSet rsTarifaCliente = null;
-		ResultSet rsTarifaDefecto = null;
-		ResultSet rsPesoTotalAnio = null;
 		String codigoArticulo = null;
 		int idCliente = 0;
 		String fechaPedido = null;
@@ -298,6 +428,7 @@ public class JDBCQuery
 			stmt = conn.createStatement();
 
 			//Consultamos los ruteros
+			logger.debug("SINCRONIZANDO RUTEROS EN MODO 3G");
 			logger.debug("Consultamos los ruteros con la select: "+SELECT_RUTEROS);
 			rs = stmt.executeQuery(SELECT_RUTEROS);
 
@@ -309,63 +440,7 @@ public class JDBCQuery
 				fechaPedido = rs.getString(3);
 				peso = rs.getFloat(4);
 				precio = rs.getFloat(5);
-				observaciones = rs.getString(6);
-				
-				//Para cada registro de rutero tenemos que obtener su tarifa cliente	
-				stmtTarifaCliente = conn.createStatement();
-				rsTarifaCliente = stmtTarifaCliente.executeQuery(dameSelectTarifaClienteArticuloParaRutero(idCliente, codigoArticulo));
-				
-				//Si no hemos obtenido registro, es porque no tiene tarifa cliente y hay que poner la tarifa por defecto
-				if (rsTarifaCliente.next())
-				{
-					precioCliente = rsTarifaCliente.getFloat(1);
-				}
-				else
-				{
-					//Para cada registro de rutero tenemos que obtener su tarifa cliente	
-					stmtTarifaDefecto = conn.createStatement();
-					rsTarifaDefecto = stmtTarifaDefecto.executeQuery(dameSelectTarifaDefectoArticuloParaRutero(codigoArticulo));
-					
-					if (rsTarifaDefecto.next())
-					{
-						precioCliente = rsTarifaDefecto.getFloat(1);
-					}
-					else
-					{
-						logger.debug("TARIFA CLIENTE 0 ("+idCliente+") ("+codigoArticulo+")");
-						precioCliente = 0;
-					}					
-					
-					rsTarifaDefecto.close();
-					stmtTarifaDefecto.close();
-				}
-				
-				rsTarifaCliente.close();
-				stmtTarifaCliente.close();
-				
-				//Tenemos que obtener el peso total al anio
-				stmtPesoTotalAnio = conn.createStatement();
-				rsPesoTotalAnio = stmtPesoTotalAnio.executeQuery(dameSelectPesoTotalAnioParaClienteArticulo(idCliente, codigoArticulo));
-				
-				if (rsPesoTotalAnio.next())
-				{	
-					//Si es kilos tomamos el peso total, sino las unidades totales
-					if (rsPesoTotalAnio.getBoolean(1))
-					{
-						pesoTotalAnio = rsPesoTotalAnio.getFloat(2);
-					}
-					else
-					{
-						pesoTotalAnio = rsPesoTotalAnio.getFloat(3);					
-					}
-				}
-				else
-				{
-					pesoTotalAnio = 0;
-				}
-				
-				rsPesoTotalAnio.close();
-				stmtPesoTotalAnio.close();
+				observaciones = rs.getString(6);				
 				
 				listaRuteros.add(new Rutero(codigoArticulo, idCliente, fechaPedido, peso, pesoTotalAnio, precio, precioCliente, observaciones));
 			}
@@ -382,23 +457,308 @@ public class JDBCQuery
 		finally 
 		{
 			try {
-				rs.close();
-				rsTarifaCliente.close();
-				rsTarifaDefecto.close();
-				rsPesoTotalAnio.close();
-				stmt.close();
-				stmtTarifaCliente.close();
-				stmtTarifaDefecto.close();
-				stmtPesoTotalAnio.close();
-				conn.close();
+				if (rs!=null) rs.close();
+				if (stmt!=null) stmt.close();
+				if (conn!=null) conn.close();
 			} 
-			catch (SQLException e) {
+			catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 
 		return listaRuteros;
+	}	
+	
+	/**
+	 * Obtiene los datos de la tarifa cliente para un rutero
+	 * 
+	 * @param idCliente
+	 * @param codigoArticulo
+	 * 
+	 * @return objeto con el resultado de la consulta
+	 */
+	public static ResultadoConsultaDato getRuteroTarifaCliente(int idCliente, String codigoArticulo) 
+	{
+		ResultadoConsultaDato resultado = new ResultadoConsultaDato(ResultadoEnvioPedido.SIN_ERROR, null, -1);
+		Statement stmt = null;
+		Connection conn = null;
+		ResultSet rs = null;
+
+		try 
+		{
+			conn = getConnection();
+			stmt = conn.createStatement();
+
+			//Consultamos los ruteros
+			logger.debug("Consultamos la tarifa cliente para idCliente ("+idCliente+") codigoArticulo ("+codigoArticulo+")");
+
+			rs = stmt.executeQuery(dameSelectTarifaClienteArticuloParaRutero(idCliente, codigoArticulo));
+				
+			if (rs.next())
+			{
+				resultado.setDato(rs.getFloat(1));
+			}
+			
+			logger.debug("Tarifa cliente obtenida ("+resultado.getDato()+")");
+			
+			rs.close();
+			stmt.close();
+		} 
+		catch (Exception e) 
+		{
+			resultado.setCodigoError(ResultadoConsultaDato.CON_ERROR);
+			resultado.setDescripcionError(e.toString());
+			
+			logger.error("Excepcion: "+e.toString());
+			e.printStackTrace();	
+		} 
+		//Cerramos los objetos abiertos para la consulta en la BD
+		finally 
+		{
+			try {
+				if (rs!=null) rs.close();
+				if (stmt!=null)stmt.close();
+			} 
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		return resultado;
 	}
+	
+	/**
+	 * Obtiene los datos de la tarifa defecto para un rutero
+	 * 
+	 * @param codigoArticulo
+	 * 
+	 * @return objeto con el resultado de la consulta
+	 */
+	public static ResultadoConsultaDato getRuteroTarifaDefecto(String codigoArticulo) 
+	{
+		ResultadoConsultaDato resultado = new ResultadoConsultaDato(ResultadoEnvioPedido.SIN_ERROR, null, -1);
+		Statement stmt = null;
+		Connection conn = null;
+		ResultSet rs = null;
+
+		try 
+		{
+			conn = getConnection();
+			stmt = conn.createStatement();
+
+			//Consultamos los ruteros
+			logger.debug("Consultamos la tarifa defecto para codigoArticulo ("+codigoArticulo+")");
+
+			rs = stmt.executeQuery(dameSelectTarifaDefectoArticuloParaRutero(codigoArticulo));
+				
+			if (rs.next())
+			{
+				resultado.setDato(rs.getFloat(1));
+			}
+			
+			logger.debug("Tarifa defecto obtenida ("+resultado.getDato()+")");
+			
+			rs.close();
+			stmt.close();
+		} 
+		catch (Exception e) 
+		{
+			resultado.setCodigoError(ResultadoConsultaDato.CON_ERROR);
+			resultado.setDescripcionError(e.toString());
+			
+			logger.error("Excepcion: "+e.toString());
+			e.printStackTrace();	
+		} 
+		//Cerramos los objetos abiertos para la consulta en la BD
+		finally 
+		{
+			try {
+				if (rs!=null) rs.close();
+				if (stmt!=null) stmt.close();
+				if (conn!=null) conn.close();
+			} 
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		return resultado;
+	}
+	
+	/**
+	 * Obtiene los datos de la tarifa defecto para un rutero
+	 *
+	 * @param idCliente
+	 * @param codigoArticulo
+	 * 
+	 * @return objeto con el resultado de la consulta
+	 */
+	public static ResultadoConsultaDato getRuteroPesoTotalAnio(int idCliente, String codigoArticulo) 
+	{
+		ResultadoConsultaDato resultado = new ResultadoConsultaDato(ResultadoEnvioPedido.SIN_ERROR, null, 0);
+		Statement stmt = null;
+		Connection conn = null;
+		ResultSet rs = null;
+
+		try 
+		{
+			conn = getConnection();
+			stmt = conn.createStatement();
+
+			//Consultamos los ruteros
+			logger.debug("Consultamos el peso total al anio para idCliente ("+idCliente+") codigoArticulo ("+codigoArticulo+")");
+
+			rs = stmt.executeQuery(dameSelectPesoTotalAnioParaClienteArticulo(idCliente, codigoArticulo));
+				
+			if (rs.next())
+			{	
+				//Si es kilos tomamos el peso total, sino las unidades totales
+				if (rs.getBoolean(1))
+				{
+					resultado.setDato(rs.getFloat(2));
+				}
+				else
+				{
+					resultado.setDato(rs.getFloat(3));					
+				}
+			}
+			else
+			{
+				resultado.setDato(0);
+			}
+			
+			logger.debug("Peso total anual obtenido ("+resultado.getDato()+")");
+			
+			rs.close();
+			stmt.close();
+		} 
+		catch (Exception e) 
+		{
+			resultado.setCodigoError(ResultadoConsultaDato.CON_ERROR);
+			resultado.setDescripcionError(e.toString());
+			
+			logger.error("Excepcion: "+e.toString());
+			e.printStackTrace();	
+		} 
+		//Cerramos los objetos abiertos para la consulta en la BD
+		finally 
+		{
+			try {
+				if (rs!=null) rs.close();
+				if (stmt!= null) stmt.close();
+				if (conn!=null) conn.close();
+			} 
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		return resultado;
+	}
+	
+    /**
+     * Obtiene la tarifa cliente, tarifa defecto y peso total de una linea de rutero
+     *
+     * @param idCliente
+     * @param codigoArticulo
+     * @return ArrayList donde cada elemento seran los datos de un rutero
+     */
+    public static ResultadoDatosRutero getDatosParaRutero(int idCliente, String codigoArticulo)
+    {
+    		ResultadoDatosRutero resultadoDatosRutero = new ResultadoDatosRutero(ResultadoEnvioPedido.SIN_ERROR, null, -1, -1);
+            Statement stmtTarifaCliente = null;
+            Statement stmtTarifaDefecto = null;
+            Statement stmtPesoTotalAnio = null;
+            Connection conn = null;
+            ResultSet rsTarifaCliente = null;
+            ResultSet rsTarifaDefecto = null;
+            ResultSet rsPesoTotalAnio = null;
+
+            try
+            {
+            	conn = getConnection();
+                           
+            	//Para cada registro de rutero tenemos que obtener su tarifa cliente    
+            	stmtTarifaCliente = conn.createStatement();
+            	rsTarifaCliente = stmtTarifaCliente.executeQuery(dameSelectTarifaClienteArticuloParaRutero(idCliente, codigoArticulo));
+                           
+            	//Si no hemos obtenido registro, es porque no tiene tarifa cliente y hay que poner la tarifa por defecto
+            	if (rsTarifaCliente.next())
+            	{
+            		resultadoDatosRutero.setTarifaCliente(rsTarifaCliente.getFloat(1));
+            	}
+            	else
+            	{    
+            		stmtTarifaDefecto = conn.createStatement();
+            		rsTarifaDefecto = stmtTarifaDefecto.executeQuery(dameSelectTarifaDefectoArticuloParaRutero(codigoArticulo));
+                                   
+            		if (rsTarifaDefecto.next())
+            		{
+            			resultadoDatosRutero.setTarifaCliente(rsTarifaDefecto.getFloat(1));
+            		}
+            		else
+            		{
+            			logger.debug("TARIFA CLIENTE 0. idCliente ("+idCliente+") codigoArticulo ("+codigoArticulo+")");
+            			resultadoDatosRutero.setTarifaCliente(0);
+            		}                                      
+                                   
+            		rsTarifaDefecto.close();
+            		stmtTarifaDefecto.close();
+            	}
+                           
+            	rsTarifaCliente.close();
+            	stmtTarifaCliente.close();
+                           
+            	//Tenemos que obtener el peso total al anio
+            	stmtPesoTotalAnio = conn.createStatement();
+            	rsPesoTotalAnio = stmtPesoTotalAnio.executeQuery(dameSelectPesoTotalAnioParaClienteArticulo(idCliente, codigoArticulo));
+                           
+            	if (rsPesoTotalAnio.next())
+            	{      
+            		//Si es kilos tomamos el peso total, sino las unidades totales
+            		if (rsPesoTotalAnio.getBoolean(1))
+            		{
+            			resultadoDatosRutero.setPesoTotalAnio(rsPesoTotalAnio.getFloat(2));
+            		}
+            		else
+            		{
+            			resultadoDatosRutero.setPesoTotalAnio(rsPesoTotalAnio.getFloat(3));                                    
+            		}
+            	}
+            	else
+            	{
+            		resultadoDatosRutero.setPesoTotalAnio(0);
+            	}
+                           
+            	rsPesoTotalAnio.close();
+            	stmtPesoTotalAnio.close();
+            }
+            catch (Exception e)
+            {
+                    logger.error("Excepcion: "+e.toString());
+                    e.printStackTrace();
+            }
+            //Cerramos los objetos abiertos para la consulta en la BD
+            finally
+            {
+                    try {
+                            if (rsTarifaCliente!=null) rsTarifaCliente.close();
+                            if (rsTarifaDefecto!=null) rsTarifaDefecto.close();
+                            if (rsPesoTotalAnio!=null) rsPesoTotalAnio.close();
+                            if (stmtTarifaCliente!=null) stmtTarifaCliente.close();
+                            if (stmtTarifaDefecto!=null) stmtTarifaDefecto.close();
+                            if (stmtPesoTotalAnio!=null) stmtPesoTotalAnio.close();
+                            if (conn!=null) conn.close();
+                    }
+                    catch (Exception e) {
+                            e.printStackTrace();
+                    }
+            }
+
+            logger.debug("Para idCliente ("+idCliente+") codigoArticulo ("+codigoArticulo+") tenemos tarifa cliente ("+resultadoDatosRutero.getTarifaCliente()+") y peso total ("+resultadoDatosRutero.getPesoTotalAnio()+")");
+            
+            return resultadoDatosRutero;
+    }
 	
 	private static String dameSelectTarifaClienteArticuloParaRutero(int idCliente, String codigoArticulo) throws Exception
 	{
@@ -479,10 +839,10 @@ public class JDBCQuery
 		finally 
 		{
 			try {
-				rs.close();
-				stmt.close();
-				conn.close();
-			} catch (SQLException e) {
+				if (rs!=null) rs.close();
+				if (stmt!=null) stmt.close();
+				if (conn!=null) conn.close();
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -495,7 +855,7 @@ public class JDBCQuery
 	 * 
 	 * @return ArrayList donde cada elemento seran los datos de una observacion
 	 */
-	public static ResultadoEnvioPedido postPrepedido(JsonPrepedido prepedido) 
+	public static ResultadoEnvioPedido postPrepedido(JsonPedido prepedido) 
 	{
 		ResultadoEnvioPedido resultado = new ResultadoEnvioPedido(ResultadoEnvioPedido.SIN_ERROR, null);
 		Statement stmt = null;
@@ -524,7 +884,7 @@ public class JDBCQuery
 			logger.debug("*** Vamos a enviar a intraza un prepedido nuevo. Cliente ("+prepedido.getIdCliente()+")");
 			
 			//Insertamos el prepedido
-			stmt.executeUpdate(dameInsertPrepedido(prepedido.getIdCliente(), prepedido.getObservaciones(), prepedido.getDiaFechaPedido(), prepedido.getMesFechaPedido(), prepedido.getAnioFechaPedido(), prepedido.getDiaFechaEntrega(), prepedido.getMesFechaEntrega(), prepedido.getAnioFechaEntrega()));
+			stmt.executeUpdate(dameInsertPrepedido(prepedido.getIdCliente(), prepedido.getObservaciones(), prepedido.getDiaFechaPedido(), prepedido.getMesFechaPedido(), prepedido.getAnioFechaPedido(), prepedido.getDiaFechaEntrega(), prepedido.getMesFechaEntrega(), prepedido.getAnioFechaEntrega(), prepedido.getDescuentoEspecial()));
 			
 			//Obtenemos el id prepedido insertado en intraza
 			rs = stmt.executeQuery(SELECT_ID_PEDIDO_PARA_INSERT);
@@ -621,10 +981,10 @@ public class JDBCQuery
 		finally 
 		{
 			try {
-				rs.close();
-				stmt.close();
-				conn.close();
-			} catch (SQLException e) {
+				if (rs!=null) rs.close();
+				if (stmt!=null) stmt.close();
+				if (conn!=null) conn.close();
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -634,7 +994,7 @@ public class JDBCQuery
 	
 	private static String dameInsertPrepedido(int idCliente, String observaciones,
 											  int diaPedido, int mesPedido, int anioPedido,
-											  int diaEntrega, int mesEntrega, int anioEntrega) throws Exception
+											  int diaEntrega, int mesEntrega, int anioEntrega, int descuentoEspecial) throws Exception
 	{
 		String insert = null;
 		boolean insertarComoPrepedidos = true;
@@ -647,9 +1007,9 @@ public class JDBCQuery
 		
 		insert =
 				"INSERT INTO pedido "+
-				"(fecha_pedido, id_cliente, fecha_entrega, observaciones, es_prepedido) "+
+				"(fecha_pedido, id_cliente, fecha_entrega, observaciones, es_prepedido, descuento_especial) "+
 				"VALUES "+
-				"(to_timestamp('"+diaPedido+"-"+mesPedido+"-"+anioPedido+"', 'DD-MM-YYYY'), "+idCliente+", to_timestamp('"+diaEntrega+"-"+mesEntrega+"-"+anioEntrega+"', 'DD-MM-YYYY'), '"+observaciones+"', "+insertarComoPrepedidos+")";
+				"(to_timestamp('"+diaPedido+"-"+mesPedido+"-"+anioPedido+"', 'DD-MM-YYYY'), "+idCliente+", to_timestamp('"+diaEntrega+"-"+mesEntrega+"-"+anioEntrega+"', 'DD-MM-YYYY'), '"+observaciones+"', "+insertarComoPrepedidos+", "+descuentoEspecial+")";
 		
 		logger.debug(insert);
 		

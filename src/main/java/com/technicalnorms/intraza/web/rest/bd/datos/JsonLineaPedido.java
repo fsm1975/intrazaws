@@ -5,7 +5,7 @@ package com.technicalnorms.intraza.web.rest.bd.datos;
  * @author JLZS
  *
  */
-public class JsonLineaPrepedido
+public class JsonLineaPedido
 {
 	private int idPrepedido = 0;
 	private String codArticulo = null;
@@ -30,7 +30,7 @@ public class JsonLineaPrepedido
 	 * @param fijarArticulo
 	 * @param fijarObservaciones
 	 */
-	public JsonLineaPrepedido(int idPrepedido, String codArticulo, String nombreArticulo, float cantidad, float precio, String observaciones, boolean fijarPrecio, boolean fijarArticulo, boolean fijarObservaciones)
+	public JsonLineaPedido(int idPrepedido, String codArticulo, String nombreArticulo, float cantidad, float precio, String observaciones, boolean fijarPrecio, boolean fijarArticulo, boolean fijarObservaciones)
 	{
 		this.idPrepedido = idPrepedido;
 		this.codArticulo = codArticulo;
@@ -43,7 +43,7 @@ public class JsonLineaPrepedido
 		this.fijarObservaciones = fijarObservaciones;
 	}
 	
-	public JsonLineaPrepedido()
+	public JsonLineaPedido()
 	{
 	}
 	
