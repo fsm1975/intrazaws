@@ -933,7 +933,7 @@ public class JDBCQuery
 				logger.debug("Articulo comercial creado ("+idArticuloComercialInTraza+")");
 				
 				//Hacemos un insert de la linea de prepedido
-				stmt.executeUpdate(dameInsertPrepedidoItem(idPedidoInTraza, prepedido.getLineasPedido().get(i).getCantidad(), prepedido.getLineasPedido().get(i).getPrecio(), idArticuloComercialInTraza, prepedido.getLineasPedido().get(i).getObservaciones(), esKgArticuloInTraza));
+				stmt.executeUpdate(dameInsertPrepedidoItem(idPedidoInTraza, prepedido.getLineasPedido().get(i).getCantidadKg(), prepedido.getLineasPedido().get(i).getCantidadUd(), prepedido.getLineasPedido().get(i).getPrecio(), idArticuloComercialInTraza, prepedido.getLineasPedido().get(i).getObservaciones(), esKgArticuloInTraza));
 				
 				logger.debug("Insertado prepedido item");
 				
@@ -942,7 +942,7 @@ public class JDBCQuery
 				{
 					//Insertamos los datos del articulo en el rutero del cliente
 					stmt.executeUpdate(dameInsertArticuloEnRutero(idPedidoInTraza, prepedido.getDiaFechaPedido(), prepedido.getMesFechaPedido(), 
-																  prepedido.getAnioFechaPedido(), prepedido.getIdCliente(), prepedido.getLineasPedido().get(i).getCantidad(), 
+																  prepedido.getAnioFechaPedido(), prepedido.getIdCliente(), prepedido.getLineasPedido().get(i).getCantidadKg(), prepedido.getLineasPedido().get(i).getCantidadUd(),
 																  esKgArticuloInTraza, prepedido.getLineasPedido().get(i).getPrecio(), 
 																  prepedido.getLineasPedido().get(i).getCodArticulo(), prepedido.getLineasPedido().get(i).getNombreArticulo()));
 					
@@ -1072,57 +1072,31 @@ public class JDBCQuery
 		return insert;
 	}
 	
-	private static String dameInsertPrepedidoItem(int idPrepedido, float cantidad, float precio,
+	private static String dameInsertPrepedidoItem(int idPrepedido, float cantidadKg, int cantidadUd, float precio,
 												  int idArticuloComercial, String observaciones, boolean esKg) throws Exception
 	{
 		String insert = null;
-		int unidades = 0;
-		float peso = 0;
-		
-		if (esKg)
-		{
-			unidades = 1;
-			peso = cantidad;
-		}
-		else
-		{
-			unidades = (int)cantidad;
-			peso = -1;
-		}
 		
 		insert =
 				"INSERT INTO pedido_item "+
 				"(id_pedido, unidades, peso, precio_kg, articulo_comercial_fk, observaciones, numero_lote_proveedor, status, isKg) "+
 				"VALUES "+
-				"("+idPrepedido+", "+unidades+", "+peso+", "+precio+", "+idArticuloComercial+", '"+observaciones+"', '', 3, "+esKg+")";
+				"("+idPrepedido+", "+cantidadUd+", "+cantidadKg+", "+precio+", "+idArticuloComercial+", '"+observaciones+"', '', 3, "+esKg+")";
 		
 		logger.debug(insert);
 		
 		return insert;
 	}
 	
-	private static String dameInsertArticuloEnRutero(int idPedido, int diaPedido, int mesPedido, int anioPedido, int idCliente, float cantidad, boolean esKg, float precio, String codigoArticulo, String nombreArticulo) throws Exception
+	private static String dameInsertArticuloEnRutero(int idPedido, int diaPedido, int mesPedido, int anioPedido, int idCliente, float cantidadKg, int cantidadUd, boolean esKg, float precio, String codigoArticulo, String nombreArticulo) throws Exception
 	{
 		String insert = null;
-		int unidades = 0;
-		float peso = 0;
-		
-		if (esKg)
-		{
-			unidades = 1;
-			peso = cantidad;
-		}
-		else
-		{
-			unidades = (int)cantidad;
-			peso = -1;
-		}
 
 		insert =
 				"INSERT INTO rutero "+
 				"(num_pedido, fecha_pedido, cliente_fk, unidades, peso, precio, codigo_articulo, nombre_articulo) "+
 				"VALUES "+
-				"("+idPedido+", to_timestamp('"+diaPedido+"-"+mesPedido+"-"+anioPedido+"', 'DD-MM-YYYY'), "+idCliente+", "+unidades+", "+peso+", "+precio+", '"+codigoArticulo+"', '"+nombreArticulo+"')";
+				"("+idPedido+", to_timestamp('"+diaPedido+"-"+mesPedido+"-"+anioPedido+"', 'DD-MM-YYYY'), "+idCliente+", "+cantidadUd+", "+cantidadKg+", "+precio+", '"+codigoArticulo+"', '"+nombreArticulo+"')";
 
 		logger.debug(insert);
 		
