@@ -970,6 +970,14 @@ public class JDBCQuery
 					logger.debug("Modificado precio cliente. Cliente ("+prepedido.getIdCliente()+") codigo articulo ("+prepedido.getLineasPedido().get(i).getCodArticulo()+") precio ("+prepedido.getLineasPedido().get(i).getPrecio()+")");
 				}
 			}
+			
+			//Leemos de la configuracion como hay que insertar el pedido, si como prepedido o pedido, al crear el pedido siempre se pone este campo a "false"
+			if (PropiedadesConfiguracion.leeStringConfiguracion("INSERTAR_PEDIDOS_COMO_PREPEDIDOS", "SI").equals("SI"))
+			{
+				stmt.executeUpdate(dameUpdatePrepedidoCampoEsPrepedido(idPedidoInTraza, true));
+				
+				logger.debug("Modificado el Pedido ("+idPedidoInTraza+") para indicar que es prepedido");
+			}
 		} 
 		catch (Exception e) 
 		{
@@ -997,23 +1005,36 @@ public class JDBCQuery
 											  int diaEntrega, int mesEntrega, int anioEntrega, int descuentoEspecial) throws Exception
 	{
 		String insert = null;
-		boolean insertarComoPrepedidos = true;
 		
-		//Leemos de la configuracion como hay que insertar el pedido, si como prepedido o pedido
-		if (!PropiedadesConfiguracion.leeStringConfiguracion("INSERTAR_PEDIDOS_COMO_PREPEDIDOS", "SI").equals("SI"))
-		{
-			insertarComoPrepedidos = false;
-		}
+		//Insertamos siempre a false, el campo que indica si es prepedido y al final de insertar las lineas de pedido, hacemos un update segun se indique en
+		//configuracion, asi nos evitamos este problema:
+		// "Si mientras envian algun prepedido, desde intraza recuperan un prepedido
+		// que se esta enviando pero no ha terminado pueden recuperarlo incompleto,
+		// lo guardan y pierden la mitad de pedido items"	
 		
 		insert =
 				"INSERT INTO pedido "+
 				"(fecha_pedido, id_cliente, fecha_entrega, observaciones, es_prepedido, descuento_especial) "+
 				"VALUES "+
-				"(to_timestamp('"+diaPedido+"-"+mesPedido+"-"+anioPedido+"', 'DD-MM-YYYY'), "+idCliente+", to_timestamp('"+diaEntrega+"-"+mesEntrega+"-"+anioEntrega+"', 'DD-MM-YYYY'), '"+observaciones+"', "+insertarComoPrepedidos+", "+descuentoEspecial+")";
+				"(to_timestamp('"+diaPedido+"-"+mesPedido+"-"+anioPedido+"', 'DD-MM-YYYY'), "+idCliente+", to_timestamp('"+diaEntrega+"-"+mesEntrega+"-"+anioEntrega+"', 'DD-MM-YYYY'), '"+observaciones+"', false, "+descuentoEspecial+")";
 		
 		logger.debug(insert);
 		
 		return insert;
+	}
+	
+	private static String dameUpdatePrepedidoCampoEsPrepedido(int idPedido, boolean esPrepedido) throws Exception
+	{
+		String update = null;
+
+		update =
+				"UPDATE pedido "+
+				"SET es_prepedido = "+esPrepedido+" "+
+				"WHERE id_pedido = "+idPedido;
+		
+		logger.debug(update);
+		
+		return update;
 	}
 	
 	private static String dameSelectDatosArticulo(String codigoArticulo) throws Exception
@@ -1072,7 +1093,7 @@ public class JDBCQuery
 		return insert;
 	}
 	
-	private static String dameInsertPrepedidoItem(int idPrepedido, float cantidadKg, int cantidadUd, float precio,
+	private static String dameInsertPrepedidoItem(int idPedido, float cantidadKg, int cantidadUd, float precio,
 												  int idArticuloComercial, String observaciones, boolean esKg) throws Exception
 	{
 		String insert = null;
@@ -1081,7 +1102,7 @@ public class JDBCQuery
 				"INSERT INTO pedido_item "+
 				"(id_pedido, unidades, peso, precio_kg, articulo_comercial_fk, observaciones, numero_lote_proveedor, status, isKg) "+
 				"VALUES "+
-				"("+idPrepedido+", "+cantidadUd+", "+cantidadKg+", "+precio+", "+idArticuloComercial+", '"+observaciones+"', '', 3, "+esKg+")";
+				"("+idPedido+", "+cantidadUd+", "+cantidadKg+", "+precio+", "+idArticuloComercial+", '"+observaciones+"', '', 3, "+esKg+")";
 		
 		logger.debug(insert);
 		
