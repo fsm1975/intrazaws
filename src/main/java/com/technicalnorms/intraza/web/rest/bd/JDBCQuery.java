@@ -33,12 +33,13 @@ public class JDBCQuery
 			"ORDER BY codigo";
 	
 	private final static String SELECT_CLIENTES = 
-			 "SELECT id_cliente, nombre_cliente, pedido_obs "+
+			 "SELECT id_cliente, nombre_cliente, pedido_obs, telefono "+
 			 "FROM cliente "+ 
 			 "ORDER BY id_cliente";		
 	
+	//El campo peso contiene el ultimo peso servido, no el peso pedido
 	private final static String SELECT_RUTEROS = 
-			 "SELECT codigo_articulo, cliente_fk, to_char(fecha_pedido, 'DD-MM-YYYY'), peso, precio, observaciones_item "+
+			 "SELECT codigo_articulo, cliente_fk, to_char(fecha_pedido, 'DD-MM-YYYY'), unidades, peso, precio, observaciones_item, status "+
 			 "FROM rutero "+ 
 			 "ORDER BY codigo_articulo, cliente_fk";
 	
@@ -239,7 +240,7 @@ public class JDBCQuery
 			//Obtenemos los datos de cada registro
 			while (rs.next())
 			{
-				listaClientes.add(new Cliente(rs.getInt(1), rs.getString(2), rs.getString(3)));
+				listaClientes.add(new Cliente(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4)));
 			}
 		} 
 		catch (Exception e) 
@@ -288,11 +289,14 @@ public class JDBCQuery
             String codigoArticulo = null;
             int idCliente = 0;
             String fechaPedido = null;
+            int unidades = 0;
             float peso = 0;
+            int unidadesTotalAnio = 0;
             float pesoTotalAnio = 0;
             float precio = 0;
             float precioCliente = 0;
             String observaciones = null;
+            int status= 3;
 
             try
             {
@@ -309,9 +313,11 @@ public class JDBCQuery
                             codigoArticulo = rs.getString(1);
                             idCliente = rs.getInt(2);
                             fechaPedido = rs.getString(3);
-                            peso = rs.getFloat(4);
-                            precio = rs.getFloat(5);
-                            observaciones = rs.getString(6);
+                            unidades = rs.getInt(4);
+                            peso = rs.getFloat(5);
+                            precio = rs.getFloat(6);
+                            observaciones = rs.getString(7);
+                            status = rs.getInt(8);
                            
                             //Para cada registro de rutero tenemos que obtener su tarifa cliente    
                             stmtTarifaCliente = conn.createStatement();
@@ -352,24 +358,27 @@ public class JDBCQuery
                             if (rsPesoTotalAnio.next())
                             {      
                                     //Si es kilos tomamos el peso total, sino las unidades totales
-                                    if (rsPesoTotalAnio.getBoolean(1))
-                                    {
-                                            pesoTotalAnio = rsPesoTotalAnio.getFloat(2);
-                                    }
-                                    else
-                                    {
-                                            pesoTotalAnio = rsPesoTotalAnio.getFloat(3);                                    
-                                    }
+//                                    if (rsPesoTotalAnio.getBoolean(1))
+//                                    {
+//                                            pesoTotalAnio = rsPesoTotalAnio.getFloat(2);
+//                                    }
+//                                    else
+//                                    {
+//                                            unidadesTotalAnio = rsPesoTotalAnio.getInt(3);                                    
+//                                    }
+                            	pesoTotalAnio = rsPesoTotalAnio.getFloat(2);
+                            	unidadesTotalAnio = rsPesoTotalAnio.getInt(3);   
                             }
                             else
                             {
-                                    pesoTotalAnio = 0;
+                            	pesoTotalAnio = 0;
+                            	unidadesTotalAnio = 0;
                             }
                            
                             rsPesoTotalAnio.close();
                             stmtPesoTotalAnio.close();
                            
-                            listaRuteros.add(new Rutero(codigoArticulo, idCliente, fechaPedido, peso, pesoTotalAnio, precio, precioCliente, observaciones));
+                            listaRuteros.add(new Rutero(codigoArticulo, idCliente, fechaPedido, unidades, peso, unidadesTotalAnio, pesoTotalAnio, precio, precioCliente, observaciones, status));
                     }
             }
             catch (Exception e)
@@ -416,11 +425,14 @@ public class JDBCQuery
 		String codigoArticulo = null;
 		int idCliente = 0;
 		String fechaPedido = null;
+		int unidades = 0;
 		float peso = 0;
+		int unidadesTotalAnio = 0;
 		float pesoTotalAnio = 0;
 		float precio = 0;
 		float precioCliente = 0;
 		String observaciones = null;
+        int status= 3;
 
 		try 
 		{
@@ -440,9 +452,10 @@ public class JDBCQuery
 				fechaPedido = rs.getString(3);
 				peso = rs.getFloat(4);
 				precio = rs.getFloat(5);
-				observaciones = rs.getString(6);				
+				observaciones = rs.getString(6);
+				status = rs.getInt(7);	
 				
-				listaRuteros.add(new Rutero(codigoArticulo, idCliente, fechaPedido, peso, pesoTotalAnio, precio, precioCliente, observaciones));
+				listaRuteros.add(new Rutero(codigoArticulo, idCliente, fechaPedido, unidades, peso, unidadesTotalAnio, pesoTotalAnio, precio, precioCliente, observaciones, status));
 			}
 		} 
 		catch (Exception e) 
@@ -479,7 +492,7 @@ public class JDBCQuery
 	 */
 	public static ResultadoConsultaDato getRuteroTarifaCliente(int idCliente, String codigoArticulo) 
 	{
-		ResultadoConsultaDato resultado = new ResultadoConsultaDato(ResultadoEnvioPedido.SIN_ERROR, null, -1);
+		ResultadoConsultaDato resultado = new ResultadoConsultaDato(ResultadoEnvioPedido.SIN_ERROR, null, -1, 0);
 		Statement stmt = null;
 		Connection conn = null;
 		ResultSet rs = null;
@@ -536,7 +549,7 @@ public class JDBCQuery
 	 */
 	public static ResultadoConsultaDato getRuteroTarifaDefecto(String codigoArticulo) 
 	{
-		ResultadoConsultaDato resultado = new ResultadoConsultaDato(ResultadoEnvioPedido.SIN_ERROR, null, -1);
+		ResultadoConsultaDato resultado = new ResultadoConsultaDato(ResultadoEnvioPedido.SIN_ERROR, null, -1, 0);
 		Statement stmt = null;
 		Connection conn = null;
 		ResultSet rs = null;
@@ -595,7 +608,7 @@ public class JDBCQuery
 	 */
 	public static ResultadoConsultaDato getRuteroPesoTotalAnio(int idCliente, String codigoArticulo) 
 	{
-		ResultadoConsultaDato resultado = new ResultadoConsultaDato(ResultadoEnvioPedido.SIN_ERROR, null, 0);
+		ResultadoConsultaDato resultado = new ResultadoConsultaDato(ResultadoEnvioPedido.SIN_ERROR, null, 0, 0);
 		Statement stmt = null;
 		Connection conn = null;
 		ResultSet rs = null;
@@ -613,18 +626,21 @@ public class JDBCQuery
 			if (rs.next())
 			{	
 				//Si es kilos tomamos el peso total, sino las unidades totales
-				if (rs.getBoolean(1))
-				{
-					resultado.setDato(rs.getFloat(2));
-				}
-				else
-				{
-					resultado.setDato(rs.getFloat(3));					
-				}
+//				if (rs.getBoolean(1))
+//				{
+//					resultado.setDato(rs.getFloat(2));
+//				}
+//				else
+//				{
+//					resultado.setDato(rs.getFloat(3));					
+//				}
+				resultado.setDato(rs.getFloat(2));
+				resultado.setDato2(rs.getInt(3));	
 			}
 			else
 			{
 				resultado.setDato(0);
+				resultado.setDato2(0);
 			}
 			
 			logger.debug("Peso total anual obtenido ("+resultado.getDato()+")");
@@ -665,7 +681,7 @@ public class JDBCQuery
      */
     public static ResultadoDatosRutero getDatosParaRutero(int idCliente, String codigoArticulo)
     {
-    		ResultadoDatosRutero resultadoDatosRutero = new ResultadoDatosRutero(ResultadoEnvioPedido.SIN_ERROR, null, -1, -1);
+    		ResultadoDatosRutero resultadoDatosRutero = new ResultadoDatosRutero(ResultadoEnvioPedido.SIN_ERROR, null, -1, -1, 0);
             Statement stmtTarifaCliente = null;
             Statement stmtTarifaDefecto = null;
             Statement stmtPesoTotalAnio = null;
@@ -716,18 +732,22 @@ public class JDBCQuery
             	if (rsPesoTotalAnio.next())
             	{      
             		//Si es kilos tomamos el peso total, sino las unidades totales
-            		if (rsPesoTotalAnio.getBoolean(1))
-            		{
-            			resultadoDatosRutero.setPesoTotalAnio(rsPesoTotalAnio.getFloat(2));
-            		}
-            		else
-            		{
-            			resultadoDatosRutero.setPesoTotalAnio(rsPesoTotalAnio.getFloat(3));                                    
-            		}
+//            		if (rsPesoTotalAnio.getBoolean(1))
+//            		{
+//            			resultadoDatosRutero.setPesoTotalAnio(rsPesoTotalAnio.getFloat(2));
+//            		}
+//            		else
+//            		{
+//            			resultadoDatosRutero.setPesoTotalAnio(rsPesoTotalAnio.getFloat(3));                                    
+//            		}
+            		
+            		resultadoDatosRutero.setPesoTotalAnio(rsPesoTotalAnio.getFloat(2));
+            		resultadoDatosRutero.setUnidadesTotalAnio(rsPesoTotalAnio.getInt(3));
             	}
             	else
             	{
             		resultadoDatosRutero.setPesoTotalAnio(0);
+            		resultadoDatosRutero.setUnidadesTotalAnio(0);
             	}
                            
             	rsPesoTotalAnio.close();
@@ -965,9 +985,26 @@ public class JDBCQuery
 				{
 					//Modificamos la observaciones por defecto para los prepedido item
 					stmt.executeUpdate(dameDeletePrecioPrepedidoItem(prepedido.getIdCliente(), formatoArticuloInTraza, piezaArticuloInTraza, claseAnimalArticuloInTraza, esKgArticuloInTraza, esCongeladoArticuloInTraza));
-					stmt.executeUpdate(dameInsertPrecioPrepedidoItem(formatoArticuloInTraza, piezaArticuloInTraza, claseAnimalArticuloInTraza, prepedido.getIdCliente(), esKgArticuloInTraza, esCongeladoArticuloInTraza, prepedido.getLineasPedido().get(i).getPrecio()));
+					
+					if (prepedido.getLineasPedido().get(i).getFijarObservaciones())
+					{
+						stmt.executeUpdate(dameInsertPrecioPrepedidoItemConObservaciones(formatoArticuloInTraza, piezaArticuloInTraza, claseAnimalArticuloInTraza, prepedido.getIdCliente(), esKgArticuloInTraza, esCongeladoArticuloInTraza, prepedido.getLineasPedido().get(i).getPrecio(), prepedido.getLineasPedido().get(i).getObservaciones()));
+					}
+					else
+					{
+						stmt.executeUpdate(dameInsertPrecioPrepedidoItem(formatoArticuloInTraza, piezaArticuloInTraza, claseAnimalArticuloInTraza, prepedido.getIdCliente(), esKgArticuloInTraza, esCongeladoArticuloInTraza, prepedido.getLineasPedido().get(i).getPrecio()));						
+					}
 					
 					logger.debug("Modificado precio cliente. Cliente ("+prepedido.getIdCliente()+") codigo articulo ("+prepedido.getLineasPedido().get(i).getCodArticulo()+") precio ("+prepedido.getLineasPedido().get(i).getPrecio()+")");
+				}
+				
+				//Comprobamos si hay que suprimir el precio del pedido item en InTraza
+				if (prepedido.getLineasPedido().get(i).getSuprimirPrecio())
+				{
+					//Modificamos la observaciones por defecto para los prepedido item
+					stmt.executeUpdate(dameDeletePrecioPrepedidoItem(prepedido.getIdCliente(), formatoArticuloInTraza, piezaArticuloInTraza, claseAnimalArticuloInTraza, esKgArticuloInTraza, esCongeladoArticuloInTraza));
+					
+					logger.debug("Quitado precio cliente. Cliente ("+prepedido.getIdCliente()+") codigo articulo ("+prepedido.getLineasPedido().get(i).getCodArticulo()+") precio ("+prepedido.getLineasPedido().get(i).getPrecio()+")");
 				}
 			}
 			
@@ -1192,5 +1229,20 @@ public class JDBCQuery
 		logger.debug(insert);
 		
 		return insert;
-	}	
+	}
+	
+	private static String dameInsertPrecioPrepedidoItemConObservaciones(int formato, int pieza, int claseAnimal, int idCliente, boolean esKg, boolean esCongelado, float precio, String observaciones) throws Exception
+	{
+		String insert = null;
+
+		insert =
+				"INSERT INTO tarifa_tipo_articulo_cliente "+
+				"(formato_fk, pieza_fk, clase_animal_fk, cliente_fk, tarifa, iskg, congelado, pi_observaciones) "+
+				"VALUES "+
+				"("+formato+", "+pieza+", "+claseAnimal+", "+idCliente+", "+precio+", "+esKg+", "+esCongelado+", '"+observaciones+"')";
+
+		logger.debug(insert);
+		
+		return insert;
+	}
 }

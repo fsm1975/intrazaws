@@ -9,13 +9,15 @@ public class ResultadoDatosRutero
 	private String descripcionError = null;
 	private float tarifaCliente = 0;
 	private float pesoTotalAnio = 0;
+	private int unidadesTotalAnio = 0;
 	
-	public ResultadoDatosRutero(int codigoError, String descripcion, float tarifaCliente, float pesoTotalAnio) 
+	public ResultadoDatosRutero(int codigoError, String descripcion, float tarifaCliente, float pesoTotalAnio, int unidadesTotalAnio) 
 	{
 		this.codigoError = codigoError;
 		this.descripcionError = descripcion;
 		this.tarifaCliente = tarifaCliente;
 		this.pesoTotalAnio = pesoTotalAnio;
+		this.unidadesTotalAnio = unidadesTotalAnio;
 	}
 	
 	public int getCodigoError() 
@@ -56,5 +58,15 @@ public class ResultadoDatosRutero
 	public void setPesoTotalAnio(float tarifa) 
 	{
 		this.pesoTotalAnio = tarifa;
+	}
+	
+	public float getUnidadesTotalAnio() 
+	{
+		return this.unidadesTotalAnio;
+	}
+	
+	public void setUnidadesTotalAnio(int tarifa) 
+	{
+		this.unidadesTotalAnio = tarifa;
 	}
 }

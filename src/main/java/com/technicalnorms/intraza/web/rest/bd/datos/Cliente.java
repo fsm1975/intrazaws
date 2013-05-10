@@ -5,12 +5,14 @@ public class Cliente
 	private int idCliente = 0;
 	private String nombreCliente = null;
 	private String pedidoObs = null;
+	private String telefono = null;
 	
-	public Cliente(int idCliente, String nombreCliente, String pedidoObs) 
+	public Cliente(int idCliente, String nombreCliente, String pedidoObs, String telefono) 
 	{
 		this.idCliente = idCliente;
 		this.nombreCliente = nombreCliente;
 		this.pedidoObs = pedidoObs;
+		this.telefono = telefono;
 	}
 	
 	public int getIdCliente() 
@@ -41,5 +43,15 @@ public class Cliente
 	public void setPedidoObs(String pedidoObs) 
 	{
 		this.pedidoObs = pedidoObs;
+	}
+	
+	public String getTelefono() 
+	{
+		return this.telefono;
+	}
+	
+	public void setTelefono(String telefono) 
+	{
+		this.telefono = telefono;
 	}
 }

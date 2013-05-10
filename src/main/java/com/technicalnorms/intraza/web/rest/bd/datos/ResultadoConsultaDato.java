@@ -8,12 +8,14 @@ public class ResultadoConsultaDato
 	private int codigoError = SIN_ERROR;
 	private String descripcionError = null;
 	private float dato = 0;
+	private int dato2 = 0;
 	
-	public ResultadoConsultaDato(int codigoError, String descripcion, float dato) 
+	public ResultadoConsultaDato(int codigoError, String descripcion, float dato, int dato2) 
 	{
 		this.codigoError = codigoError;
 		this.descripcionError = descripcion;
 		this.dato = dato;
+		this.dato2 = dato2;
 	}
 	
 	public int getCodigoError() 
@@ -44,5 +46,15 @@ public class ResultadoConsultaDato
 	public void setDato(float dato) 
 	{
 		this.dato = dato;
+	}
+	
+	public int getDato2() 
+	{
+		return this.dato2;
+	}
+	
+	public void setDato2(int dato2) 
+	{
+		this.dato2 = dato2;
 	}
 }
