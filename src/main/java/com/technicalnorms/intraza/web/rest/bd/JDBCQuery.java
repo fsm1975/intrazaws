@@ -31,6 +31,26 @@ public class JDBCQuery
 			"WHERE tai.formato_fk = f.id_formato AND tai.pieza_fk = p.id_pieza AND tai.clase_animal_fk = ca.id_clase_animal AND ca.id_tipo_animal = ta.id_tipo_animal "+
 			"AND ttac.cliente_fk is null and ttac.formato_fk=tai.formato_fk and ttac.pieza_fk=tai.pieza_fk and ttac.clase_animal_fk=tai.clase_animal_fk  and ttac.congelado=tai.congelado and ttac.iskg=tai.iskg "+
 			"ORDER BY codigo";
+
+	private final static String SELECT_ARTICULOS_SIN_TARIFA_DEFECTO =
+			"SELECT distinct tai.iskg, tai.congelado, tai.codigo , trim(\"replace\"(\"replace\"(upper((((f.nombre_formato::text || ' '::text) || p.nombre_pieza::text) || ' '::text) || ca.nombre_clase_animal::text), 'UNIDAD'::text, ''::text), 'ENTERO'::text, ''::text)) AS nombre_completo "+
+			"FROM tipo_articulo_identificado tai ,formato f, pieza p, clase_animal ca, tipo_animal ta, tarifa_tipo_articulo_cliente ttac "+ 
+			"WHERE tai.formato_fk = f.id_formato "+ 
+			"AND tai.pieza_fk = p.id_pieza "+
+			"AND tai.clase_animal_fk = ca.id_clase_animal "+ 
+			"AND ca.id_tipo_animal = ta.id_tipo_animal "+
+			"AND ttac.cliente_fk IS NOT NULL "+
+			"AND ttac.formato_fk=tai.formato_fk AND ttac.pieza_fk=tai.pieza_fk AND ttac.clase_animal_fk=tai.clase_animal_fk AND ttac.congelado=tai.congelado AND ttac.iskg=tai.iskg "+
+			"AND tai.codigo NOT IN "+
+			"(SELECT tai.codigo "+
+			"FROM tipo_articulo_identificado tai ,formato f, pieza p, clase_animal ca, tipo_animal ta, tarifa_tipo_articulo_cliente ttac "+ 
+			"WHERE tai.formato_fk = f.id_formato "+ 
+			"AND tai.pieza_fk = p.id_pieza "+
+			"AND tai.clase_animal_fk = ca.id_clase_animal "+ 
+			"AND ca.id_tipo_animal = ta.id_tipo_animal "+
+			"AND ttac.cliente_fk IS NULL "+
+			"AND ttac.formato_fk=tai.formato_fk AND ttac.pieza_fk=tai.pieza_fk AND ttac.clase_animal_fk=tai.clase_animal_fk AND ttac.congelado=tai.congelado AND ttac.iskg=tai.iskg "+
+			") ORDER BY codigo";
 	
 	private final static String SELECT_CLIENTES = 
 			 "SELECT id_cliente, nombre_cliente, pedido_obs, telefono "+
@@ -183,7 +203,6 @@ public class JDBCQuery
 			conn = getConnection();
 			stmt = conn.createStatement();
 
-			//Consultamos los articulos
 			logger.debug("Consultamos los articulos con la select: "+SELECT_ARTICULOS);
 			rs = stmt.executeQuery(SELECT_ARTICULOS);
 
@@ -191,6 +210,15 @@ public class JDBCQuery
 			while (rs.next())
 			{
 				listaArticulos.add(new Articulo(rs.getString(3), rs.getString(4), rs.getBoolean(1), rs.getBoolean(2), rs.getFloat(5), rs.getString(6)));
+			}
+			 
+			logger.debug("Consultamos los articulos sin tarifa defecto con la select: "+SELECT_ARTICULOS_SIN_TARIFA_DEFECTO);
+			rs = stmt.executeQuery(SELECT_ARTICULOS_SIN_TARIFA_DEFECTO);
+
+			//Obtenemos los datos de cada registro
+			while (rs.next())
+			{
+				listaArticulos.add(new Articulo(rs.getString(3), rs.getString(4), rs.getBoolean(1), rs.getBoolean(2), 0, null));
 			}
 		} 
 		catch (Exception e) 
