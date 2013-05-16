@@ -816,7 +816,7 @@ public class JDBCQuery
 				 "FROM tipo_articulo_identificado tai, formato f, pieza p, clase_animal ca, tipo_animal ta, tarifa_tipo_articulo_cliente ttac "+
 				 "WHERE tai.formato_fk=f.id_formato AND tai.pieza_fk=p.id_pieza AND tai.clase_animal_fk=ca.id_clase_animal AND ca.id_tipo_animal=ta.id_tipo_animal "+
 				 "AND ttac.cliente_fk="+idCliente+" AND ttac.pieza_fk=tai.pieza_fk AND ttac.formato_fk=tai.formato_fk AND ttac.clase_animal_fk=tai.clase_animal_fk "+
-				 "AND ttac.congelado=tai.congelado AND ttac.iskg=tai.iskg AND codigo like '"+codigoArticulo+"' AND pi_observaciones like '' AND tarifa_porcentaje IS NULL";
+				 "AND ttac.congelado=tai.congelado AND ttac.iskg=tai.iskg AND codigo like '"+codigoArticulo+"' AND pi_observaciones like '' AND tarifa_porcentaje IS NULL AND ttac.tarifa IS NOT NULL";
 		
 		return select;
 	}
@@ -829,7 +829,7 @@ public class JDBCQuery
 				 "FROM tipo_articulo_identificado tai, formato f, pieza p, clase_animal ca, tipo_animal ta, tarifa_tipo_articulo_cliente ttac "+
 				 "WHERE tai.formato_fk=f.id_formato AND tai.pieza_fk=p.id_pieza AND tai.clase_animal_fk=ca.id_clase_animal AND ca.id_tipo_animal=ta.id_tipo_animal "+
 				 "AND ttac.cliente_fk IS NULL AND ttac.pieza_fk=tai.pieza_fk AND ttac.formato_fk=tai.formato_fk AND ttac.clase_animal_fk=tai.clase_animal_fk "+
-				 "AND ttac.congelado=tai.congelado AND ttac.iskg=tai.iskg AND codigo like '"+codigoArticulo+"'";
+				 "AND ttac.congelado=tai.congelado AND ttac.iskg=tai.iskg AND codigo like '"+codigoArticulo+"' AND ttac.tarifa IS NOT NULL";
 
 		return select;
 	}
