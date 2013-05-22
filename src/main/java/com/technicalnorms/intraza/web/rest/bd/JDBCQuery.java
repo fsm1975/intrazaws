@@ -478,10 +478,11 @@ public class JDBCQuery
 				codigoArticulo = rs.getString(1);
 				idCliente = rs.getInt(2);
 				fechaPedido = rs.getString(3);
-				peso = rs.getFloat(4);
-				precio = rs.getFloat(5);
-				observaciones = rs.getString(6);
-				status = rs.getInt(7);	
+				unidades = rs.getInt(4);
+				peso = rs.getFloat(5);
+				precio = rs.getFloat(6);
+				observaciones = rs.getString(7);
+				status = rs.getInt(8);	
 				
 				listaRuteros.add(new Rutero(codigoArticulo, idCliente, fechaPedido, unidades, peso, unidadesTotalAnio, pesoTotalAnio, precio, precioCliente, observaciones, status));
 			}
